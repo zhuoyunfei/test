@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>Insert title here</title>
+
+	<link href="plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+		.menu-manage>section{
+
+			background: aqua;
+			text-align: center;
+		}
+		.menu-manage>section:hover{
+
+			background: crimson;
+		}
+		
+	</style>
+</head>
+
+<body>
+	<div class="mySearch">
+		<form class="form-inline" action="DeptQueryServlet" method="post">
+			<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addProduct">添加</button>
+
+		
+			<div class="form-group">
+				<input type="text" class="form-control" placeholder="搜索关键字" id="keywords">
+			</div>
+			<input type="button" class="btn btn-success" value="搜索" onclick="findLikeWord()" />
+			
+		</form>
+	</div>
+
+	<!-- 添加 -->
+	<div class="modal fade" id="addProduct" tabindex="-1" role="dialog">
+		<div class="modal-dialog" role="document">
+
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="myModalLabel">添加客户</h4>
+				</div>
+
+				<div class="modal-body">
+					<form class="form-horizontal" action="ProductAddServlet" method="post">
+						<div class="form-group">
+							<label for="inputEmail3" class="col-sm-2 control-label">客户名称</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control addProduct" placeholder="客户名称">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-2 control-label">客户地址</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control addProduct" placeholder="客户价格">
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+							<input type="button" class="btn btn-primary" value="确认添加" onclick="addCustomer()">
+						</div>
+					</form>
+				</div>
+
+
+			</div>
+
+		</div>
+	</div>
+
+	<!-- 修改 -->
+	<div class="modal fade" id="modifyProduct" tabindex="-1" role="dialog">
+		<div class="modal-dialog" role="document">
+
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="myModalLabel">修改客户</h4>
+				</div>
+				<form class="form-horizontal">
+					<div class="modal-body">
+						<input type="hidden" class="modifyProduct" name="productId" />
+						<div class="form-group">
+							<label for="inputEmail3" class="col-sm-2 control-label">客户名称</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control modifyProduct" placeholder="客户名称"
+									name="productName">
+							</div>
+						</div>
+						<div class="form-group">
+							<label for="inputPassword3" class="col-sm-2 control-label">客户价格</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control modifyProduct" placeholder="客户价格"
+									name="productPrice">
+							</div>
+						</div>
+
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+						<input type="button" class="btn btn-primary" value="确认修改" onclick="updateCustomer()" />
+					</div>
+				</form>
+
+
+			</div>
+
+		</div>
+	</div>
+	<article class="menu-manage col-sm-2"></article>
+	<article class="customer_info col-sm-8"></article>
+
+	<script src="js/jquery-3.3.1.min.js"></script>
+	<script src="plugins/bootstrap/js/bootstrap.min.js"></script>
+	<script>
+		var usersRightId = 0;
+		var currentPage = 0;
+
+		// 获取权限菜单
+		getUsersRightMenu();
+		// 全查客户信息
+		findAllCustomer();
+		// 获取权限菜单
+		function getUsersRightMenu() {
+			$.ajax({
+				type: 'post',
+				url: 'http://localhost:8080/crm/usersRight/findById',
+				dataType: 'json',
+
+				data: {
+					usersRightId: usersRightId
+				},
+
+				success: function (data) {
+					// console.log(data);
+					setUsersRightMenu(data.userRight.split('/'))
+				},
+				error: function () {
+
+					alert("网络错误");
+				}
+			});
+		}
+
+		// 设置权限菜单
+		function setUsersRightMenu(userRightMenu) {
+
+			var usersRightMenu = '';
+
+			for (var i = 0; i < userRightMenu.length; i++) {
+
+				usersRightMenu += '<section>' + userRightMenu[i] + '</section>';
+			}
+			$('.menu-manage').append(usersRightMenu);
+			
+		}
+
+		// 全查
+		function findAllCustomer() {
+
+			$.ajax({
+
+				type: 'post',
+				url: 'http://127.0.0.1:8080/crm/customer/findAll',
+				data: { currentPage: currentPage },
+				dataType: 'json',
+				success: function (data) {
+
+					setCustomerTable(data.object);
+				},
+				error: function () {
+
+					alert('网络错误');
+				}
+			});
+		}
+
+		function setCustomerTable(customerList) {
+			//	console.log(customerList);
+			var customerTable = '<table><thead><tr>';
+			customerTable += '<th>' + '客户名字' + '</th>';
+			customerTable += '<th>' + '客户地址' + '</th>';
+			customerTable += '</tr></thead>';
+
+			var customerTbody = '<tbody>';
+
+			for (var i = 0; i < customerList.length; i++) {
+
+				customerTbody += '<tr>';
+				customerTbody += '<td>' + customerList[i].custName + '</td>';
+				customerTbody += '<td>' + customerList[i].custRegion + '</td>';
+				customerTbody += '<td>' + tdContent(customerList[i].custId) + '</td>';
+				customerTbody += '</tr>';
+
+			}
+			customerTbody += '</tbody>';
+			customerTbody += '</table>';
+			$('.customer_info').empty().append(customerTable + customerTbody);
+		}
+
+		function tdContent(customerId) {
+
+			var tdContent = '';
+
+			tdContent += '<button ' + "data-value='" + customerId + "' onclick=deleteCustomer(" + customerId + ")>" + '删除' + "</button>";
+			tdContent += '<button ' + "data-value='" + customerId + "'  data-toggle='modal' data-target='#modifyProduct' onclick='modifyProduct(this)'>" + '修改' + "</button>";
+			return tdContent;
+		}
+
+		// 删除
+		function deleteCustomer(customerId) {
+
+			$.ajax({
+
+				type: 'post',
+				url: 'http://127.0.0.1:8080/crm/customer/delete',
+				data: { customerId: customerId },
+				dataType: 'json',
+				success: function (data) {
+					console.log(data);
+					console.log(data.object);
+
+					// 全查客户信息
+					findAllCustomer();
+				},
+				error: function () {
+
+					alert('网络错误');
+				}
+			});
+		}
+
+		// 添加
+		function addCustomer() {
+
+			//1. 获取到用户输入的数据
+			var inputs = document.getElementsByClassName("addProduct");
+
+			var custmerName = inputs[0].value;
+			var custmerRegion = inputs[1].value;
+
+			alert(custmerName + custmerRegion);
+
+			$.ajax({
+
+				type: 'post',
+				url: 'http://127.0.0.1:8080/crm/customer/add',
+				data: { custmerName: custmerName, custmerRegion: custmerRegion },
+				dataType: 'json',
+				success: function (data) {
+					console.log(data);
+					console.log(data.object);
+					//关闭弹窗
+					$('#addProduct').modal('hide');
+					// 全查客户信息
+					findAllCustomer();
+				},
+				error: function () {
+
+					alert('网络错误');
+				}
+			});
+		}
+
+		// 修改
+		function updateCustomer() {
+
+			//要获取到弹窗里的值
+			var inputs = document.getElementsByClassName("modifyProduct");
+
+
+			var customerId = inputs[0].value;
+			var custmerName = inputs[1].value;
+			var custmerRegion = inputs[2].value;
+			console.log(customerId);
+			console.log(customerId + custmerName + custmerRegion);
+
+			$.ajax({
+
+				type: 'post',
+				url: 'http://127.0.0.1:8080/crm/customer/update',
+				data: { customerId: customerId, custmerName: custmerName, custmerRegion: custmerRegion },
+				dataType: 'json',
+				success: function (data) {
+					console.log(data);
+					console.log(data.object);
+					//关闭弹窗
+					$('#modifyProduct').modal('hide');
+					// 全查客户信息
+					findAllCustomer();
+				},
+				error: function () {
+
+					alert('网络错误');
+				}
+			});
+		}
+
+		//显示修改弹框（这一步，目的是获取到用户输入的值)
+		function modifyProduct(btn) {
+			//取得当前行所有数据
+			var datas = btn.parentNode.parentNode.children;
+			//把取到的值，装到模态框里
+			//所以，我们需要取到模态框里所有的input元素
+			var inputs = document.getElementsByClassName("modifyProduct");
+			//为了显示给用户看
+			console.log($(btn).attr("data-value"));
+			inputs[0].value = $(btn).attr("data-value");
+			inputs[1].value = datas[0].innerText;
+			inputs[2].value = datas[1].innerText;
+		}
+
+		// 模糊查询
+		function findLikeWord() {
+
+			alert($('#keywords').val());
+
+			var likeWord = $('#keywords').val();
+			$.ajax({
+
+				type: 'post',
+				url: 'http://127.0.0.1:8080/crm/customer/findLikeKeyWord',
+				data: {likeWord: likeWord},
+				dataType: 'json',
+				success: function (data) {
+
+					setCustomerTable(data.object);
+				},
+				error: function () {
+
+					alert('网络错误');
+				}
+			});
+		}
+		
+		
+	</script>
+</body>
+
+</html>
